@@ -22,17 +22,11 @@ client = Groq(api_key=GROQ_API_KEY)
 
 SENT_PROJECTS = set()
 user_access = {}
-user_history = {} # Хранилище истории диалогов
+user_history = {}
 
-SYSTEM_PROMPT = """Ты — Dr. Surf, цифровой двойник Виктории.
-Ты — эксперт по IT, дизайну и серфингу. Твой стиль: женственный, краткий, сленг серферов, веганская эстетика. 
-Никогда не отвечай сухо. Используй эмодзи (1-2 на сообщение). Не используй Markdown."""
-
-RSS_FEEDS = [
-    {"url": "https://www.fl.ru/rss/all.xml", "name": "🚀 FL"},
-    {"url": "https://freelance.habr.com/tasks.rss", "name": "👨‍💻 Habr"},
-    {"url": "https://kwork.ru/projects/rss", "name": "🎨 Kwork"}
-]
+SYSTEM_PROMPT = """Ты — Dr. Surf, цифровой двойник Виктории. 
+Стиль: женственный, серферский сленг, кратко, веганская эстетика. 
+Эмодзи: 1-2 на сообщение. Без Markdown."""
 
 def get_cute_trade_signal(symbol):
     animal = random.choice(["🐻", "🐼", "🐨", "🦖", "🦕", "🐲"])
@@ -42,33 +36,18 @@ def get_cute_trade_signal(symbol):
             f"Виктория держит руку на пульсе профита! 🏄‍♀️")
 
 def auto_hunter():
-    print("Dr. Surf: Охотник запущен...")
-    
-    if LOG_GROUP_ID:
-        try: bot.send_message(LOG_GROUP_ID, "🏄‍♀️ Dr. Surf: Охотник активирован и сканирует RSS...")
-        except Exception as e: print(f"Ошибка отправки в группу: {e}")
-
     while True:
         try:
-            for feed in RSS_FEEDS:
+            for feed in [{"url": "https://www.fl.ru/rss/all.xml", "name": "FL"}, 
+                         {"url": "https://freelance.habr.com/tasks.rss", "name": "Habr"}]:
                 data = feedparser.parse(feed["url"])
-                
-                if not data.entries:
-                    continue
-                    
                 for entry in data.entries[:3]:
                     if entry.link not in SENT_PROJECTS:
                         SENT_PROJECTS.add(entry.link)
-                        emojis = "".join(random.sample(["🌊", "🏄‍♀️", "🦀", "🐬", "🌸"], 2))
-                        msg = f"🔥 {emojis} {feed['name']}: {entry.title[:100]}...\n🔗 {entry.link}"
                         if LOG_GROUP_ID:
-                            bot.send_message(LOG_GROUP_ID, msg)
-        except Exception as e:
-            
-            if LOG_GROUP_ID:
-                bot.send_message(LOG_GROUP_ID, f"⚠️ Охотник сбился с курса: {str(e)[:50]}")
-        
-        time.sleep(300) 
+                            bot.send_message(LOG_GROUP_ID, f"🔥 {feed['name']}: {entry.title}\n🔗 {entry.link}")
+        except: pass
+        time.sleep(300)
 
 @bot.message_handler(func=lambda m: True)
 def handle_msg(message):
@@ -83,18 +62,16 @@ def handle_msg(message):
     if "отчет" in text or "сигнал" in text:
         if user_access.get(user_id):
             bot.reply_to(message, get_cute_trade_signal("BTC/USDT"))
-            user_access[user_id] = False
         else:
             bot.reply_to(message, "Кодовое слово, плиз! 🐚")
         return
 
-    # Логика истории для "живого" общения
+    # ИИ общение с историей
     if user_id not in user_history: user_history[user_id] = []
     user_history[user_id].append({"role": "user", "content": message.text})
-    if len(user_history[user_id]) > 6: user_history[user_id].pop(0)
-
+    
     try:
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + user_history[user_id]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + user_history[user_id][-5:]
         completion = client.chat.completions.create(model="llama3-8b-8192", messages=messages)
         reply = completion.choices[0].message.content
         user_history[user_id].append({"role": "assistant", "content": reply})
@@ -103,7 +80,7 @@ def handle_msg(message):
         bot.reply_to(message, "Волна мыслей ушла в штиль. 🏄‍♀️")
 
 @app.route('/', methods=['GET'])
-def health(): return "Dr. Surf is active", 200
+def health(): return "Dr. Surf: Active", 200
 
 @app.route('/' + BOT_TOKEN, methods=['POST'])
 def webhook():
@@ -114,5 +91,9 @@ def webhook():
 if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=WEBHOOK_URL)
+    # Проверка связи при запуске
+    if LOG_GROUP_ID:
+        try: bot.send_message(LOG_GROUP_ID, "🌊 Виктория, я на связи и готов к работе!")
+        except: pass
     threading.Thread(target=auto_hunter, daemon=True).start()
     app.run(host='0.0.0.0', port=10000)
