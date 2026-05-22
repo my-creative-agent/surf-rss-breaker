@@ -42,18 +42,33 @@ def get_cute_trade_signal(symbol):
             f"Виктория держит руку на пульсе профита! 🏄‍♀️")
 
 def auto_hunter():
+    print("Dr. Surf: Охотник запущен...")
+    
+    if LOG_GROUP_ID:
+        try: bot.send_message(LOG_GROUP_ID, "🏄‍♀️ Dr. Surf: Охотник активирован и сканирует RSS...")
+        except Exception as e: print(f"Ошибка отправки в группу: {e}")
+
     while True:
         try:
             for feed in RSS_FEEDS:
                 data = feedparser.parse(feed["url"])
+                
+                if not data.entries:
+                    continue
+                    
                 for entry in data.entries[:3]:
                     if entry.link not in SENT_PROJECTS:
                         SENT_PROJECTS.add(entry.link)
                         emojis = "".join(random.sample(["🌊", "🏄‍♀️", "🦀", "🐬", "🌸"], 2))
+                        msg = f"🔥 {emojis} {feed['name']}: {entry.title[:100]}...\n🔗 {entry.link}"
                         if LOG_GROUP_ID:
-                            bot.send_message(LOG_GROUP_ID, f"🔥 {emojis} {feed['name']}: {entry.title}\n🔗 {entry.link}")
-        except: pass
-        time.sleep(300)
+                            bot.send_message(LOG_GROUP_ID, msg)
+        except Exception as e:
+            
+            if LOG_GROUP_ID:
+                bot.send_message(LOG_GROUP_ID, f"⚠️ Охотник сбился с курса: {str(e)[:50]}")
+        
+        time.sleep(300) 
 
 @bot.message_handler(func=lambda m: True)
 def handle_msg(message):
