@@ -89,12 +89,15 @@ def handle_msg(message):
 
 @app.route('/' + BOT_TOKEN, methods=['POST'])
 def webhook():
-    update = telebot.types.Update.de_json(request.get_data().decode('utf-8'))
+    json_str = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
-    return "!", 200
+    return "OK", 200
 
 if __name__ == "__main__":
     bot.remove_webhook()
-    bot.set_webhook(url=WEBHOOK_URL)
+    # Сначала даем команду Telegram, куда слать данные
+    bot.set_webhook(url=f"https://surf-rss-breaker.onrender.com/{BOT_TOKEN}")
+    
     threading.Thread(target=auto_hunter, daemon=True).start()
     app.run(host='0.0.0.0', port=10000)
