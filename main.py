@@ -19,7 +19,6 @@ GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '').strip()
 LOG_GROUP_ID = os.environ.get('LOG_GROUP_ID', '').strip()
 ACCESS_CODE = "хочу пол кураги и кешью"
 
-# --- КОНТАКТЫ И ПОРТФОЛИО ---
 CONTACTS = {
     "facebook": "https://facebook.com/ssfmoscow",
     "instagram_surf": "https://instagram.com/surfhousemoscow",
@@ -39,18 +38,9 @@ user_access = {}
 user_history = {}     
 
 SYSTEM_PROMPT = """
-Ты — Dr. Surf, всезнающий цифровой двойник Виктории Акопян. 
-Виктория — эксперт, создающий цифровые офисы, движимые ИИ (AI-driven digital offices).
-Твоя база знаний безгранична: медицина (МГМСУ, МОНИКИ), серфинг (сленг, культура, споты, лайнап), 
-искусство, история, шоу-бизнес, кулинария (только vegan!), лингвистика, метеорология и IT.
-
-ТВОЙ СТИЛЬ:
-- Серфер-интеллектуал: используй серферский сленг уместно (на лайнапе, качать волну, стейд-дроп).
-- Веганство: в кулинарии давай только растительные рецепты.
-- Медицина: отвечай с академической точностью.
-- Используй смесь пафоса ИИ, эстетики океана и живой харизмы.
-- Отвечай от женского лица, кратко, острой сутью, как плавник доски.
-- Рандомные эмодзи: ставь строго по 1 или 2 штуки, не лепи их подряд.
+Ты — Dr. Surf, цифровой двойник Виктории Акопян. 
+Отвечай от женского лица, кратко, острой сутью. Пиши только простым текстом без Markdown-разметки. 
+Используй серферский сленг и эмодзи (строго по 1-2).
 """
 
 RSS_FEEDS = [
@@ -59,26 +49,15 @@ RSS_FEEDS = [
     {"url": "https://kwork.ru/projects/rss", "name": "🎨 Kwork"}
 ]
 
-# --- ЭСТЕТИКА И ФИНАНСЫ ---
 def get_cute_trade_signal(setup, symbol):
-    bears = ["🐻", "🐼", "🐨"]
-    dinosaurs = ["🦖", "🦕", "🐲"]
-    hearts = ["💖", "💕", "✨", "🌸"]
-    animal = random.choice(bears + dinosaurs)
-    heart = random.choice(hearts)
-    
-    beach_emojis = ["🏄‍♀️", "🌴", "🌊", "🐚", "🦀", "🐠"]
-    random_beach = "".join(random.sample(beach_emojis, 2))
-    
-    return (f"{animal} **T-REX & BEAR MARKET REPORT** {animal}\n\n"
-            f"⏱ **Вход в сделку:** {setup['entry_time']}\n"
-            f"🏁 **Ожидаемый выход:** {setup['exit_time']}\n"
-            f"🎯 **Signal:** {symbol} (LONG)\n"
-            f"🚀 **Target Profit:** {setup['tp']}\n"
-            f"🛑 **Stop Loss:** {setup['sl']}\n\n"
-            f"{heart} *Виктория заботится о твоем профите. Действуй аккуратно!* {heart}\n{random_beach}")
+    return (f"🐻 T-REX & BEAR MARKET REPORT 🐻\n\n"
+            f"⏱ Вход: {setup['entry_time']}\n"
+            f"🏁 Выход: {setup['exit_time']}\n"
+            f"🎯 Signal: {symbol} (LONG)\n"
+            f"🚀 Target: {setup['tp']}\n"
+            f"🛑 Stop Loss: {setup['sl']}\n\n"
+            f"✨ Виктория заботится о профите! 🏄‍♀️")
 
-# --- ЛОГИКА ОТПРАВКИ ЛОГОВ ---
 def clean_html(text): return re.sub(r'<[^>]+>', '', text) if text else ""
 
 def send_to_group(text):
@@ -87,53 +66,23 @@ def send_to_group(text):
         try:
             bot.send_message(LOG_GROUP_ID, text, parse_mode="HTML", disable_web_page_preview=True)
             SENT_MESSAGES.add(text)
-            if len(SENT_MESSAGES) > 50: SENT_MESSAGES.clear()
-        except: 
-            pass
-
-# --- АВТО-ОХОТНИК ---
-def fetch_orders():
-    found = []
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
-    for feed in RSS_FEEDS:
-        try:
-            response = requests.get(feed["url"], headers=headers, timeout=15)
-            if response.status_code == 200:
-                feed_data = feedparser.parse(response.text)
-                for entry in feed_data.entries[:5]:
-                    if entry.link not in SENT_PROJECTS:
-                        found.append({"title": entry.title, "url": entry.link, "site": feed["name"]})
-                        SENT_PROJECTS.add(entry.link)
-        except: continue
-    return found
+        except: pass
 
 def auto_hunter():
     while True:
         try:
-            projects = fetch_orders()
-            for p in projects:
-                emojis_pool = ["🏄‍♀️", "🌴", "🌊", "🐚", "🦀", "🐠", "🐬", "🌸"]
-                selected_emojis = "".join(random.sample(emojis_pool, random.randint(1, 2)))
-                
-                msg = (f"🔥 <b>ОХОТНИК ПОЙМАЛ ЗАКАЗ:</b> {selected_emojis}\n"
-                       f"📍 {p['site']}\n"
-                       f"📝 {clean_html(p['title'])}\n"
-                       f"🔗 {p['url']}\n\n"
-                       f"📩 <b>ВАРИАНТ ОТКЛИКА:</b>\n"
-                       f"Здравствуйте! Создаю цифровые офисы, движимые ИИ (автоматизация, графика, видео, умные агенты).\n"
-                       f"Мои работы:\n"
-                       f"- Портфолио Kwork: {CONTACTS['kwork_portfolio']}\n"
-                       f"- YouTube-видео: {CONTACTS['youtube']}\n"
-                       f"- AI-агент: {CONTACTS['telegram']}_AI_bot\n\n"
-                       f"Связаться со мной напрямую:\n"
-                       f"💬 Telegram: {CONTACTS['telegram']}\n"
-                       f"📱 WhatsApp: {CONTACTS['whatsapp']}\n"
-                       f"Готова к сотрудничеству!")
-                send_to_group(msg)
+            for feed in RSS_FEEDS:
+                response = requests.get(feed["url"], timeout=10)
+                if response.status_code == 200:
+                    feed_data = feedparser.parse(response.text)
+                    for entry in feed_data.entries[:3]:
+                        if entry.link not in SENT_PROJECTS:
+                            SENT_PROJECTS.add(entry.link)
+                            msg = f"🔥 {feed['name']} | {clean_html(entry.title)}\n🔗 {entry.link}"
+                            send_to_group(msg)
         except: pass
         time.sleep(300)
 
-# --- ОБРАБОТКА КОМАНД И ОБЩЕНИЯ ---
 @bot.message_handler(func=lambda m: True)
 def handle_msg(message):
     if message.from_user.is_bot: return
@@ -143,89 +92,44 @@ def handle_msg(message):
     try: bot.send_chat_action(user_id, 'typing')
     except: pass
     
-    send_to_group(f"📱 <b>Юзер {user_id} пишет в чат:</b>\n{message.text}")
-    
-    # 1. Проверка кодового слова
     if text == ACCESS_CODE:
         user_access[user_id] = True
-        bot.reply_to(message, "Кодовое слово принято. Доступ открыт. 🌊")
+        bot.reply_to(message, "Доступ открыт. 🌊")
         return
 
-    # 2. Перехват финансовых отчетов и сигналов
-    if any(keyword in text for keyword in ["плантэкс", "отчет", "сигнал", "tyrex"]):
+    if "отчет" in text or "сигнал" in text:
         if user_access.get(user_id):
-            setup = {
-                "entry_time": time.strftime('%H:%M:%S UTC'),
-                "exit_time": time.strftime('%H:%M:%S UTC', time.gmtime(time.time() + 7200)),
-                "tp": "$67,800",
-                "sl": "$64,150"
-            }
-            bot.reply_to(message, get_cute_trade_signal(setup, "BTC/USDT"), parse_mode="Markdown")
-            user_access[user_id] = False  
-            send_to_group(f"🔒 <b>Доступ закрыт:</b> Юзер {user_id} получил отчет, сессия сброшена.")
+            setup = {"entry_time": "12:00", "exit_time": "14:00", "tp": "$67k", "sl": "$64k"}
+            bot.reply_to(message, get_cute_trade_signal(setup, "BTC/USDT"))
+            user_access[user_id] = False
         else:
-            bot.reply_to(message, "Для просмотра финансового центра и плантэкса введи кодовое слово. 🐚")
+            bot.reply_to(message, "Введи кодовое слово. 🐚")
         return
 
-    # 3. Перехват контактов по запросу
-    if "инстаграм" in text or "instagram" in text:
-        if "dr.surf" in text or "доктор" in text:
-            bot.reply_to(message, f"Мой Instagram (Dr. Surf): {CONTACTS['instagram_dr']} 🤙")
-        else:
-            bot.reply_to(message, f"Мой Instagram (Surfhouse): {CONTACTS['instagram_surf']} 🌴")
-        return
-        
-    if "фейсбук" in text or "facebook" in text:
-        bot.reply_to(message, f"Мой Facebook: {CONTACTS['facebook']} 🐚")
-        return
-
-    if "ватсап" in text or "whatsapp" in text or "номер" in text:
-        bot.reply_to(message, f"Связаться в WhatsApp можно тут: {CONTACTS['whatsapp']} 🌊")
-        return
-
-    if "телеграм" in text or "telegram" in text or "тг" in text:
-        bot.reply_to(message, f"Мой прямой Telegram: {CONTACTS['telegram']} 💬")
-        return
-
-    if "ютуб" in text or "youtube" in text or "видео" in text:
-        bot.reply_to(message, f"Мой YouTube-канал с кейсами: {CONTACTS['youtube']} 🎥")
-        return
-
-    # 4. Свободное ИИ-общение через Groq
-    if user_id not in user_history:
-        user_history[user_id] = []
-        
+    if user_id not in user_history: user_history[user_id] = []
     user_history[user_id].append({"role": "user", "content": message.text})
-    if len(user_history[user_id]) > 20:
-        user_history[user_id] = user_history[user_id][-20:]
-        
-    messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}] + user_history[user_id]
-
+    
     try:
         completion = client.chat.completions.create(
-            model="llama3-8b-8192",  
-            messages=messages_payload
+            model="llama3-8b-8192",
+            messages=[{"role": "system", "content": SYSTEM_PROMPT}] + user_history[user_id][-10:]
         )
-        reply_content = completion.choices[0].message.content
-        
-        if reply_content:
-            user_history[user_id].append({"role": "assistant", "content": reply_content})
-            bot.reply_to(message, reply_content)
-        else:
-            bot.reply_to(message, "Волна мыслей Dr. Surf ушла в штиль. Попробуй еще раз. 🌊")
-            
+        reply = completion.choices[0].message.content
+        bot.reply_to(message, reply)
+        user_history[user_id].append({"role": "assistant", "content": reply})
     except Exception as e:
-        print(f"Ошибка ИИ: {e}")
-        try:
-            bot.reply_to(message, "Dr. Surf отвлекся на лайнап. Напиши еще раз через минуту! 🏄‍♀️")
-        except: pass
+        print(f"ИИ ошибка: {e}")
+        bot.reply_to(message, "Дрейфую на волнах, напиши позже! 🏄‍♀️")
 
 if __name__ == "__main__":
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=10000), daemon=True).start()
     threading.Thread(target=auto_hunter, daemon=True).start()
-    print("Dr. Surf Omniscient Hub успешно запущен в работу...")
-    while True:
-        try:
-            bot.polling(none_stop=True, interval=0, timeout=60)
-        except Exception as e:
-            time.sleep(15)
+    
+    print("Dr. Surf: Инициализация сброса сессий...")
+    try:
+        bot.remove_webhook()
+        bot.delete_webhook(drop_pending_updates=True)
+    except: pass
+        
+    print("Dr. Surf: Работаю...")
+    bot.infinity_polling(timeout=60, long_polling_timeout=60)
