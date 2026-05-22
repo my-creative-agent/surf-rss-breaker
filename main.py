@@ -16,10 +16,10 @@ def home(): return "Dr. Surf Omniscient Hunter: Active 🏄‍♂️🌱"
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '').strip()
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '').strip()
-LOG_GROUP_ID = os.environ.get('LOG_GROUP_ID', '2048745216')
+LOG_GROUP_ID = os.environ.get('LOG_GROUP_ID', '').strip()
 ACCESS_CODE = "хочу пол кураги и кешью"
 
-# --- ВСЕ ТВОИ КОНТАКТЫ И ПОРТФОЛИО ---
+# --- КОНТАКТЫ И ПОРТФОЛИО ---
 CONTACTS = {
     "facebook": "https://facebook.com/ssfmoscow",
     "instagram_surf": "https://instagram.com/surfhousemoscow",
@@ -35,8 +35,8 @@ client = Groq(api_key=GROQ_API_KEY)
 
 SENT_PROJECTS = set()
 SENT_MESSAGES = set()
-user_access = {}      # Хранение состояний доступа
-user_history = {}     # Хранение ТВОЕЙ истории переписки (динамическая память)
+user_access = {}      
+user_history = {}     
 
 SYSTEM_PROMPT = """
 Ты — Dr. Surf, всезнающий цифровой двойник Виктории Акопян. 
@@ -59,7 +59,7 @@ RSS_FEEDS = [
     {"url": "https://kwork.ru/projects/rss", "name": "🎨 Kwork"}
 ]
 
-# --- ЭСТЕТИКА И ФИНАНСЫ (ПОЛНЫЙ БЛОК РАНДОМНОСТИ) ---
+# --- ЭСТЕТИКА И ФИНАНСЫ ---
 def get_cute_trade_signal(setup, symbol):
     bears = ["🐻", "🐼", "🐨"]
     dinosaurs = ["🦖", "🦕", "🐲"]
@@ -78,17 +78,20 @@ def get_cute_trade_signal(setup, symbol):
             f"🛑 **Stop Loss:** {setup['sl']}\n\n"
             f"{heart} *Виктория заботится о твоем профите. Действуй аккуратно!* {heart}\n{random_beach}")
 
-# --- ЛОГИКА ---
+# --- ЛОГИКА ОТПРАВКИ ЛОГОВ ---
 def clean_html(text): return re.sub(r'<[^>]+>', '', text) if text else ""
 
 def send_to_group(text):
+    if not LOG_GROUP_ID: return
     if text not in SENT_MESSAGES:
         try:
             bot.send_message(LOG_GROUP_ID, text, parse_mode="HTML", disable_web_page_preview=True)
             SENT_MESSAGES.add(text)
             if len(SENT_MESSAGES) > 50: SENT_MESSAGES.clear()
-        except: pass
+        except: 
+            pass
 
+# --- АВТО-ОХОТНИК ---
 def fetch_orders():
     found = []
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'}
@@ -106,26 +109,28 @@ def fetch_orders():
 
 def auto_hunter():
     while True:
-        projects = fetch_orders()
-        for p in projects:
-            emojis_pool = ["🏄‍♀️", "🌴", "🌊", "🐚", "🦀", "🐠", "🐬", "🌸"]
-            selected_emojis = "".join(random.sample(emojis_pool, random.randint(1, 2)))
-            
-            msg = (f"🔥 <b>ОХОТНИК ПОЙМАЛ ЗАКАЗ:</b> {selected_emojis}\n"
-                   f"📍 {p['site']}\n"
-                   f"📝 {clean_html(p['title'])}\n"
-                   f"🔗 {p['url']}\n\n"
-                   f"📩 <b>ВАРИАНТ ОТКЛИКА:</b>\n"
-                   f"Здравствуйте! Создаю цифровые офисы, движимые ИИ (автоматизация, графика, видео, умные агенты).\n"
-                   f"Мои работы:\n"
-                   f"- Портфолио Kwork: {CONTACTS['kwork_portfolio']}\n"
-                   f"- YouTube-видео: {CONTACTS['youtube']}\n"
-                   f"- AI-агент: {CONTACTS['telegram']}_AI_bot\n\n"
-                   f"Связаться со мной напрямую:\n"
-                   f"💬 Telegram: {CONTACTS['telegram']}\n"
-                   f"📱 WhatsApp: {CONTACTS['whatsapp']}\n"
-                   f"Готова к сотрудничеству!")
-            send_to_group(msg)
+        try:
+            projects = fetch_orders()
+            for p in projects:
+                emojis_pool = ["🏄‍♀️", "🌴", "🌊", "🐚", "🦀", "🐠", "🐬", "🌸"]
+                selected_emojis = "".join(random.sample(emojis_pool, random.randint(1, 2)))
+                
+                msg = (f"🔥 <b>ОХОТНИК ПОЙМАЛ ЗАКАЗ:</b> {selected_emojis}\n"
+                       f"📍 {p['site']}\n"
+                       f"📝 {clean_html(p['title'])}\n"
+                       f"🔗 {p['url']}\n\n"
+                       f"📩 <b>ВАРИАНТ ОТКЛИКА:</b>\n"
+                       f"Здравствуйте! Создаю цифровые офисы, движимые ИИ (автоматизация, графика, видео, умные агенты).\n"
+                       f"Мои работы:\n"
+                       f"- Портфолио Kwork: {CONTACTS['kwork_portfolio']}\n"
+                       f"- YouTube-видео: {CONTACTS['youtube']}\n"
+                       f"- AI-агент: {CONTACTS['telegram']}_AI_bot\n\n"
+                       f"Связаться со мной напрямую:\n"
+                       f"💬 Telegram: {CONTACTS['telegram']}\n"
+                       f"📱 WhatsApp: {CONTACTS['whatsapp']}\n"
+                       f"Готова к сотрудничеству!")
+                send_to_group(msg)
+        except: pass
         time.sleep(300)
 
 # --- ОБРАБОТКА КОМАНД И ОБЩЕНИЯ ---
@@ -186,27 +191,34 @@ def handle_msg(message):
         bot.reply_to(message, f"Мой YouTube-канал с кейсами: {CONTACTS['youtube']} 🎥")
         return
 
-    # 4. Свободное ИИ-общение через Groq с динамической памятью контекста
+    # 4. Свободное ИИ-общение через Groq
     if user_id not in user_history:
         user_history[user_id] = []
         
     user_history[user_id].append({"role": "user", "content": message.text})
-    
     if len(user_history[user_id]) > 20:
         user_history[user_id] = user_history[user_id][-20:]
         
     messages_payload = [{"role": "system", "content": SYSTEM_PROMPT}] + user_history[user_id]
 
     try:
-        reply = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",  
             messages=messages_payload
-        ).choices[0].message.content
+        )
+        reply_content = completion.choices[0].message.content
         
-        user_history[user_id].append({"role": "assistant", "content": reply})
-        bot.reply_to(message, reply)
+        if reply_content:
+            user_history[user_id].append({"role": "assistant", "content": reply_content})
+            bot.reply_to(message, reply_content)
+        else:
+            bot.reply_to(message, "Волна мыслей Dr. Surf ушла в штиль. Попробуй еще раз. 🌊")
+            
     except Exception as e:
-        print(f"Error AI: {e}")
+        print(f"Ошибка ИИ: {e}")
+        try:
+            bot.reply_to(message, "Dr. Surf отвлекся на лайнап. Напиши еще раз через минуту! 🏄‍♀️")
+        except: pass
 
 if __name__ == "__main__":
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=10000), daemon=True).start()
